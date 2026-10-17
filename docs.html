@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JASD — Just Another Static Database</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+        :root {
+            --bg: #0b1120;          
+            --surface: #131c31;     
+            --surface-hover: #1e293b;
+            --text-main: #f8fafc;   
+            --text-dim: #94a3b8;    
+            --border: #2a3449;      
+            
+            --accent-cyan: #22d3ee;
+            --accent-purple: #a78bfa;
+            --accent-orange: #fb923c;
+            --accent-green: #4ade80;
+            --accent-red: #ef4444;
+
+            --term-bg: #020617;
+            --term-header: #0f172a;
+            --term-text: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+        ::selection { background: var(--accent-cyan); color: #000; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-brand {
+            font-family: 'Lora', serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-brand span { color: var(--accent-cyan); }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-install {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .nav-install:hover { border-color: var(--accent-cyan); }
+        .nav-install span { color: var(--text-dim); user-select: none; }
+
+        .nav-download {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--accent-green);
+            color: #000;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.45rem 1rem;
+            border-radius: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .nav-download:hover { opacity: 0.9; }
+
+        .layout { display: flex; flex: 1; }
+
+        .sidebar {
+            width: 260px;
+            border-right: 1px solid var(--border);
+            padding: 2rem 1.5rem;
+            position: fixed;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            background-color: var(--bg);
+        }
+
+        .nav-section {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
+            margin: 1.5rem 0 0.5rem;
+            font-weight: 600;
+        }
+
+        .nav-links a {
+            display: block;
+            color: var(--text-dim);
+            text-decoration: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: -0.75rem;
+        }
+
+        .nav-links a:hover { 
+            color: var(--text-main); 
+            background-color: var(--surface);
+            transform: translateX(4px);
+        }
+        
+        .nav-links a.active {
+            color: var(--accent-cyan);
+            background-color: var(--surface);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 0 6px 6px 0;
+            transform: translateX(4px);
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 4rem 5rem;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .page { display: none; }
+        .page.active { 
+            display: block; 
+            animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-family: 'Lora', serif;
+            font-size: 3.2rem;
+            font-weight: 600;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-family: 'Lora', serif;
+            font-size: 1.4rem;
+            color: var(--text-dim);
+            margin-bottom: 3rem;
+            font-weight: 400;
+            line-height: 1.4;
+            font-style: italic;
+            border-left: 4px solid var(--accent-purple);
+            padding: 0.5rem 1rem;
+            background-color: rgba(167, 139, 250, 0.05);
+            border-radius: 0 6px 6px 0;
+        }
+
+        h2 {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin: 3.5rem 0 1.25rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: '#';
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 400;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin: 2rem 0 0.75rem;
+            color: var(--accent-cyan);
+        }
+
+        p { margin-bottom: 1.25rem; color: var(--text-dim); font-size: 1.05rem; line-height: 1.7; }
+        
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-orange);
+            background-color: rgba(251, 146, 60, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid rgba(251, 146, 60, 0.2);
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 2.5rem 0;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-cyan);
+        }
+
+        .card h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-cyan);
+            margin: 0 0 0.75rem 0;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            margin: 0;
+            line-height: 1.6;
+            color: var(--text-dim);
+        }
+
+        .terminal-wrapper { position: relative; margin-bottom: 2rem; }
+
+        .terminal-block {
+            background-color: var(--term-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background-color: var(--term-header);
+            padding: 0.75rem 1rem;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .terminal-dot.red { background-color: #ef4444; }
+        .terminal-dot.yellow { background-color: #f59e0b; }
+        .terminal-dot.green { background-color: #10b981; }
+
+        .terminal-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            transition: color 0.2s;
+        }
+
+        .copy-btn:hover { color: var(--accent-cyan); }
+
+        .terminal-content {
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--term-text);
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .cli-emulator {
+            background-color: var(--term-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--term-text);
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            outline: none;
+        }
+
+        .cli-box {
+            border: 1px solid #a855f7;
+            border-radius: 8px;
+            padding: 1.5rem;
+            width: fit-content;
+            min-width: 400px;
+        }
+
+        .cli-title { color: var(--accent-cyan); font-weight: 600; margin-bottom: 1rem; }
+        
+        .cli-menu-item {
+            padding: 0.2rem 0;
+            color: var(--text-dim);
+            transition: color 0.1s;
+        }
+        
+        .cli-menu-item.active {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .cli-prompt { color: var(--accent-green); margin-top: 1.5rem; }
+        
+        .cli-input-box {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            margin-top: 1rem;
+            color: var(--text-main);
+            width: 100%;
+            outline: none;
+        }
+
+        .cli-table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+        .cli-table th { color: var(--accent-cyan); text-align: left; padding-bottom: 0.5rem; font-weight: 600; }
+        .cli-table td { padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+        .cli-error { color: var(--accent-red); }
+
+        .faq-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            background-color: var(--surface);
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 1.25rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        .faq-question:hover { background-color: var(--surface-hover); }
+        
+        .faq-answer {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            color: var(--text-dim);
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .faq-item.open .faq-answer {
+            padding: 0 1.5rem 1.25rem 1.5rem;
+            max-height: 300px;
+        }
+
+        .faq-item.open .faq-question {
+            color: var(--accent-cyan);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; padding: 2rem; }
+            h1 { font-size: 2.2rem; }
+            .top-nav { padding: 1rem; flex-direction: column; gap: 1rem; align-items: flex-start; }
+            .nav-actions { width: 100%; justify-content: space-between; }
+            .cli-box { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <span>{ }</span> JASD
+        </div>
+        <div class="nav-actions">
+            <div class="nav-install" onclick="copyTopCode()">
+                <span id="top-copy-text">pip install jasd</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+            <a href="https://github.com/XLueIsADev/jasd-cli/releases/download/New/jasd-setup.exe" class="nav-download">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download CLI
+            </a>
+        </div>
+    </nav>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="nav-section">Getting Started</div>
+            <div class="nav-links">
+                <a href="#" class="active" onclick="showPage('intro', this)">Why JASD?</a>
+                <a href="#" onclick="showPage('quickstart', this)">Quick Start</a>
+                <a href="#" onclick="showPage('format', this)">Syntax Guide</a>
+            </div>
+            <div class="nav-section">The Ecosystem</div>
+            <div class="nav-links">
+                <a href="#" onclick="showPage('python', this)">Python Library</a>
+                <a href="#" onclick="showPage('web', this)">Web Engine</a>
+                <a href="#" onclick="showPage('cli', this)">CLI Engine</a>
+            </div>
+            <div class="nav-section">Support</div>
+            <div class="nav-links">
+                <a href="#" onclick="showPage('qna', this)">Q&A</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            
+            <div id="intro" class="page active">
+                <h1>Why another format?</h1>
+                <p class="subtitle">Because config files should be easy for humans to write.</p>
+                <p>JSON has no comments, demands quotes on every single key, and crashes if you accidentally leave a trailing comma. It was built for computers to talk to each other, not for humans to write by hand.</p>
+                <p><strong>JASD (Just Another Static Database)</strong> solves this. It keeps the familiar bracket structure of JSON, but removes the annoying rules. Plus, it comes with powerful tools to read, write, and search your files.</p>
+                
+                <div class="grid-cards">
+                    <div class="card"><h3>Simple Syntax</h3><p>Keys don't need quotes. Trailing commas won't break it.</p></div>
+                    <div class="card"><h3>Native Comments</h3><p>Use <code>--</code> to write notes anywhere in the file.</p></div>
+                    <div class="card"><h3>Python Library</h3><p>Instantly <code>pip install jasd</code> to filter data and do math.</p></div>
+                    <div class="card"><h3>Cross-Platform</h3><p>Use it in Windows with the CLI, or in web browsers.</p></div>
+                </div>
+            </div>
+
+            <div id="quickstart" class="page">
+                <h1>Quick Start</h1>
+                <p class="subtitle">Everything you need to know to get started.</p>
+
+                <h2>1. The Python Library</h2>
+                <p>If you are building a backend, a Discord bot, or a data script, JASD is a native Python package. You can install it instantly using pip.</p>
+                <div class="terminal-wrapper" style="max-width: 600px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">bash</div></div>
+                        <div class="terminal-content"><span style="color:var(--accent-green)">$</span> pip install jasd</div>
+                    </div>
+                </div>
+
+                <p>Once installed, you can import it just like the standard <code>json</code> module. It contains a full data processing engine.</p>
+                <div class="terminal-wrapper" style="max-width: 700px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">Python <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content"><span style="color:#c084fc">from</span> jasd <span style="color:#c084fc">import</span> load_file, query, sum_data
+
+<span style="color:#64748b"># 1. Load your data file</span>
+data = load_file(<span style="color:#34d399">"games.jasd"</span>)
+
+<span style="color:#64748b"># 2. Query it like SQL (find cheap RPGs)</span>
+cheap_rpgs = query(data, <span style="color:#34d399">"price < 30 and category = RPG"</span>)
+
+<span style="color:#64748b"># 3. Do math instantly</span>
+total_money = sum_data(data, <span style="color:#34d399">"price"</span>)
+print(f<span style="color:#34d399">"Total: ${total_money}"</span>)</div>
+                    </div>
+                </div>
+
+                <h2>2. The Web Engine</h2>
+                <p>If you want to load `.jasd` files into a website, you don't need Python. You just need the <code>jasd.js</code> parser file. Place it in the same folder as your HTML.</p>
+                <div class="terminal-wrapper" style="max-width: 700px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">index.html <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content"><span style="color:#64748b">&lt;!-- 1. Load the parser --&gt;</span>
+<span style="color:#94a3b8">&lt;</span><span style="color:#c084fc">script</span> src=<span style="color:#34d399">"jasd.js"</span><span style="color:#94a3b8">&gt;&lt;/</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span>
+
+<span style="color:#94a3b8">&lt;</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span>
+  <span style="color:#64748b">// 2. Fetch your data file</span>
+  fetch(<span style="color:#34d399">'data.jasd'</span>)
+    .then(res =&gt; res.text())
+    .then(text =&gt; {
+      <span style="color:#64748b">// 3. Parse it into a JS array</span>
+      <span style="color:#c084fc">const</span> data = parseJasd(<span style="color:#34d399">'data.jasd'</span>, text);
+      
+      <span style="color:#64748b">// 4. Use it like normal JavaScript!</span>
+      console.log(data[0].name); 
+    });
+<span style="color:#94a3b8">&lt;/</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span></div>
+                    </div>
+                </div>
+
+                <h2>3. The Windows CLI</h2>
+                <p>If you want to view, format, and compile files visually, run the <code>jasd-setup.exe</code> installer. It adds the `jasd` command to your system.</p>
+                <div class="terminal-wrapper" style="max-width: 700px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">Command Prompt <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content"><span style="color:#64748b">C:\Users\You&gt;</span> jasd compile data.jasd
+<span style="color:var(--accent-green)">✓ Compiled to data.json</span>
+
+<span style="color:#64748b">C:\Users\You&gt;</span> jasd</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="format" class="page">
+                <h1>Syntax Guide</h1>
+                <p class="subtitle">It's just JSON, but without the headaches.</p>
+                
+                <p>JASD supports arrays, nested objects, booleans, and native comments.</p>
+
+                <div class="terminal-wrapper" style="max-width: 600px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">data.jasd <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content"><span style="color:var(--accent-cyan);font-weight:600">JASD-V1</span>
+
+[
+    {
+        id: <span style="color:#fbbf24">1</span>
+        name: <span style="color:#34d399">"Hades"</span>
+        price: <span style="color:#fbbf24">25</span>
+        inStock: <span style="color:#60a5fa">true</span>
+        tags: [roguelike, action]
+        <span style="color:#64748b;font-style:italic">-- This is a native comment</span>
+    },
+    {
+        id: <span style="color:#fbbf24">2</span>
+        name: <span style="color:#34d399">"Minecraft"</span>
+        price: <span style="color:#fbbf24">30</span>
+        inStock: <span style="color:#60a5fa">false</span>
+        tags: [sandbox, survival]
+    }
+]</div>
+                    </div>
+                </div>
+
+                <h3>Data Types</h3>
+                <p>JASD automatically infers types without you needing to specify them.</p>
+                <ul style="color:var(--text-dim); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><strong>Numbers:</strong> Parsed as floats/integers (e.g., <code>25</code>, <code>3.14</code>).</li>
+                    <li><strong>Booleans:</strong> <code>true</code>, <code>false</code>, <code>yes</code>, <code>no</code> are evaluated as native booleans.</li>
+                    <li><strong>Arrays:</strong> Enclosed in <code>[]</code> and comma-separated.</li>
+                    <li><strong>Strings:</strong> Any bare word. Quotes are optional unless the string contains a colon.</li>
+                </ul>
+            </div>
+
+            <div id="python" class="page">
+                <h1>Python Library</h1>
+                <p class="subtitle">Data science, automation, and backend queries.</p>
+                <p>The Python version is not just a parser; it's a full data processing toolkit. You can import it just like the standard <code>json</code> library.</p>
+                
+                <div class="terminal-wrapper" style="max-width: 700px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">Python <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content"><span style="color:#c084fc">from</span> jasd <span style="color:#c084fc">import</span> load_file, query, sum_data
+
+data = load_file(<span style="color:#34d399">"games.jasd"</span>)
+
+<span style="color:#64748b"># SQL-Style Querying</span>
+cheap_rpgs = query(data, <span style="color:#34d399">"price < 30 and category = RPG"</span>)
+
+<span style="color:#64748b"># Built-in Math Engine</span>
+total = sum_data(data, <span style="color:#34d399">"price"</span>)</div>
+                    </div>
+                </div>
+
+                <h3>Advanced Features</h3>
+                <ul style="color:var(--text-dim); margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li><code>from_csv()</code> and <code>to_csv()</code> for Excel/Pandas integration.</li>
+                    <li><code>find_duplicates()</code> to clean up your databases.</li>
+                    <li><code>dump_secure()</code> to encrypt your data files with a password.</li>
+                </ul>
+            </div>
+
+            <div id="web" class="page">
+                <h1>Web Engine</h1>
+                <p class="subtitle">Use JASD directly in the browser.</p>
+                <p>You don't need Python or a CLI to view JASD files on a website. We provide a tiny JavaScript file (<code>jasd.js</code>) that can fetch and render your data instantly.</p>
+
+                <div class="terminal-wrapper" style="max-width: 700px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">index.html <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content"><span style="color:#94a3b8">&lt;</span><span style="color:#c084fc">script</span> src=<span style="color:#34d399">"jasd.js"</span><span style="color:#94a3b8">&gt;&lt;/</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span>
+
+<span style="color:#94a3b8">&lt;</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span>
+  fetch(<span style="color:#34d399">'data.jasd'</span>)
+    .then(res =&gt; res.text())
+    .then(text =&gt; {
+      <span style="color:#c084fc">const</span> data = parseJasd(<span style="color:#34d399">'data.jasd'</span>, text);
+      console.log(data); <span style="color:#64748b">// Your data is now a JS array</span>
+    });
+<span style="color:#94a3b8">&lt;/</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cli" class="page">
+                <h1>CLI Engine</h1>
+                <p class="subtitle">Manage your data visually from the Windows terminal.</p>
+                <p>Compiled in Go, the CLI launches a Terminal UI (TUI). Try it below by clicking, then using your <strong>Up/Down arrows</strong> and <strong>Enter</strong>.</p>
+
+                <div class="cli-emulator" id="cli-emulator" tabindex="0" style="max-width: 600px;">
+                    <div id="cli-render"></div>
+                </div>
+            </div>
+
+            <div id="qna" class="page">
+                <h1>Q&A</h1>
+                <p class="subtitle">Frequently asked questions.</p>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Is JASD faster than JSON?</div>
+                    <div class="faq-answer">
+                        <p>For small config files, they are roughly the same speed. However, because JASD ignores strict formatting rules like missing commas or unquoted keys, the parser uses a slightly more forgiving regex/tokenizer, which means for massive files (10,000+ rows), JSON might technically parse in 10ms while JASD parses in 12ms. The tradeoff is worth it for human readability.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Can I use this in a real production environment?</div>
+                    <div class="faq-answer">
+                        <p>Yes! The Python library is fully published on PyPI, and the Go CLI compiles down to a standalone binary. As long as you test your implementation, it is just as stable as JSON.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Why does the file need to start with JASD-V1?</div>
+                    <div class="faq-answer">
+                        <p>This is called a "Magic Header". If you accidentally try to parse a `.json` or `.txt` file, the parser will instantly throw an error saying "Missing JASD-V1 header" instead of trying to guess and crashing. It also allows us to release JASD-V2 in the future without breaking older files.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Can it handle nested objects and arrays?</div>
+                    <div class="faq-answer">
+                        <p>Absolutely. Even though you don't need quotes, JASD uses the same `{}` and `[]` bracket structure as JSON, meaning it can nest data as deeply as you need.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item" onclick="toggleFaq(this)">
+                    <div class="faq-question">Was this language Vibecoded?</div>
+                    <div class="faq-answer">
+                        <p>Not exactly. The logic and this website were made by a real human. The small templates were generated by AI so they could be simpler than mine.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function showPage(pageId, element) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (element) element.classList.add('active');
+            window.scrollTo(0, 0);
+            if (pageId === 'cli') document.getElementById('cli-emulator').focus();
+        }
+
+        function copyTopCode() {
+            const text = document.getElementById('top-copy-text');
+            navigator.clipboard.writeText("pip install jasd").then(() => {
+                const originalText = text.innerText;
+                text.innerText = "Copied!";
+                text.style.color = "var(--accent-green)";
+                setTimeout(() => { text.innerText = originalText; text.style.color = "var(--text-dim)"; }, 2000);
+            });
+        }
+
+        function copyCode(btn) {
+            const codeBlock = btn.closest('.terminal-block').querySelector('.terminal-content');
+            const textToCopy = codeBlock.innerText;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.style.color = "var(--accent-green)";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.color = "var(--text-dim)";
+                }, 2000);
+            });
+        }
+
+        function toggleFaq(element) {
+            const wasOpen = element.classList.contains('open');
+            document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('open'));
+            if (!wasOpen) {
+                element.classList.add('open');
+            }
+        }
+
+        let cliState = { menuIndex: 0, view: 'menu', query: '', output: '' };
+        const menuItems = ["Create New File", "Open File (Mouse Picker)", "View Data (Get)", "Check Syntax", "Compile to JSON", "Exit"];
+        const fakeData = [{ id: 1, name: "Cyberpunk", price: 60 }, { id: 2, name: "Hades", price: 25 }, { id: 3, name: "Minecraft", price: 30 }];
+
+        function renderCLI() {
+            const container = document.getElementById('cli-render');
+            if (cliState.view === 'menu') {
+                let html = `<div class="cli-box"><div class="cli-title">JASD CLI - Interactive Database</div><div style="color:var(--text-dim); margin-bottom:1rem; font-size:0.85rem;">Current File: data.jasd</div>`;
+                menuItems.forEach((item, i) => {
+                    const active = i === cliState.menuIndex ? 'active' : '';
+                    const cursor = i === cliState.menuIndex ? '> ' : '  ';
+                    html += `<div class="cli-menu-item ${active}">${cursor}${item}</div>`;
+                });
+                html += `<div class="cli-prompt">Press q to quit.</div></div>`;
+                container.innerHTML = html;
+            } else if (cliState.view === 'query') {
+                container.innerHTML = `<div class="cli-box"><div class="cli-title">Query Data</div><div style="color:var(--text-dim); font-size:0.85rem;">Filter (e.g. price>50)</div><input type="text" class="cli-input-box" id="cli-input" value="${cliState.query}"><div class="cli-prompt">Press Enter to run, Esc to cancel.</div></div>`;
+                const input = document.getElementById('cli-input');
+                input.focus();
+                input.addEventListener('input', (e) => { cliState.query = e.target.value; });
+            } else if (cliState.view === 'result') {
+                container.innerHTML = `<div class="cli-box"><div class="cli-title">Result</div>${cliState.output}<div class="cli-prompt">Press Enter or Esc to go back.</div></div>`;
+            }
+        }
+
+        document.getElementById('cli-emulator').addEventListener('keydown', (e) => {
+            if (["ArrowUp", "ArrowDown", "Enter", "Escape", "q"].includes(e.key)) e.preventDefault();
+            if (cliState.view === 'menu') {
+                if (e.key === 'ArrowUp') { cliState.menuIndex = Math.max(0, cliState.menuIndex - 1); renderCLI(); } 
+                else if (e.key === 'ArrowDown') { cliState.menuIndex = Math.min(menuItems.length - 1, cliState.menuIndex + 1); renderCLI(); } 
+                else if (e.key === 'Enter') {
+                    const sel = menuItems[cliState.menuIndex];
+                    if (sel === "Exit") { cliState.view = 'result'; cliState.output = '<div class="cli-error">Process finished.</div>'; renderCLI(); } 
+                    else if (sel === "View Data (Get)") { cliState.view = 'query'; renderCLI(); } 
+                    else if (sel === "Check Syntax") { cliState.view = 'result'; cliState.output = '<div style="color:var(--accent-green);">✓ Syntax is perfect!</div>'; renderCLI(); } 
+                    else { cliState.view = 'result'; cliState.output = '<div style="color:var(--accent-green);">✓ Action executed.</div>'; renderCLI(); }
+                }
+            } else if (cliState.view === 'query') {
+                if (e.key === 'Enter') {
+                    cliState.view = 'result';
+                    let filtered = fakeData;
+                    if (cliState.query.includes('>')) {
+                        const parts = cliState.query.split('>');
+                        filtered = filtered.filter(d => d[parts[0].trim()] > parseInt(parts[1]));
+                    }
+                    let html = '<table class="cli-table"><tr><th>ID</th><th>NAME</th><th>PRICE</th></tr>';
+                    if (filtered.length === 0) html += '<tr><td colspan="3" style="text-align:center;">(no records)</td></tr>';
+                    else filtered.forEach(d => { html += `<tr><td>${d.id}</td><td>${d.name}</td><td>${d.price}</td></tr>`; });
+                    cliState.output = html + '</table>';
+                    renderCLI();
+                } else if (e.key === 'Escape') { cliState.view = 'menu'; renderCLI(); }
+            } else if (cliState.view === 'result' && (e.key === 'Enter' || e.key === 'Escape')) {
+                cliState.view = 'menu'; renderCLI();
+            }
+        });
+        renderCLI();
+    </script>
+</body>
+</html>
