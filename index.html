@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JASD — Just Another Static Database</title>
-    <meta name="description" content="JASD is a config format that replaces JSON. No quotes, no commas, native comments. Install via pip or download the Windows CLI.">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -417,6 +416,16 @@
             color: var(--accent-cyan);
         }
 
+        .warning-box {
+            background-color: rgba(251, 146, 60, 0.1);
+            border-left: 4px solid var(--accent-orange);
+            padding: 1rem;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .main-content { margin-left: 0; padding: 2rem; }
@@ -494,24 +503,6 @@
                     </div>
                 </div>
 
-                <p>Once installed, you can import it just like the standard <code>json</code> module. It contains a full data processing engine.</p>
-                <div class="terminal-wrapper" style="max-width: 700px;">
-                    <div class="terminal-block">
-                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">Python <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
-                        <div class="terminal-content"><span style="color:#c084fc">from</span> jasd <span style="color:#c084fc">import</span> load_file, query, sum_data
-
-<span style="color:#64748b"># 1. Load your data file</span>
-data = load_file(<span style="color:#34d399">"games.jasd"</span>)
-
-<span style="color:#64748b"># 2. Query it like SQL (find cheap RPGs)</span>
-cheap_rpgs = query(data, <span style="color:#34d399">"price < 30 and category = RPG"</span>)
-
-<span style="color:#64748b"># 3. Do math instantly</span>
-total_money = sum_data(data, <span style="color:#34d399">"price"</span>)
-print(f<span style="color:#34d399">"Total: ${total_money}"</span>)</div>
-                    </div>
-                </div>
-
                 <h2>2. The Web Engine</h2>
                 <p>If you want to load `.jasd` files into a website, you don't need Python. You just need the <code>jasd.js</code> parser file. Place it in the same folder as your HTML.</p>
                 <div class="terminal-wrapper" style="max-width: 700px;">
@@ -527,23 +518,26 @@ print(f<span style="color:#34d399">"Total: ${total_money}"</span>)</div>
     .then(text =&gt; {
       <span style="color:#64748b">// 3. Parse it into a JS array</span>
       <span style="color:#c084fc">const</span> data = parseJasd(<span style="color:#34d399">'data.jasd'</span>, text);
-      
-      <span style="color:#64748b">// 4. Use it like normal JavaScript!</span>
-      console.log(data[0].name); 
+      console.log(data); 
     });
 <span style="color:#94a3b8">&lt;/</span><span style="color:#c084fc">script</span><span style="color:#94a3b8">&gt;</span></div>
                     </div>
                 </div>
 
                 <h2>3. The Windows CLI</h2>
-                <p>If you want to view, format, and compile files visually, run the <code>jasd-setup.exe</code> installer. It adds the `jasd` command to your system.</p>
-                <div class="terminal-wrapper" style="max-width: 700px;">
-                    <div class="terminal-block">
-                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">Command Prompt <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
-                        <div class="terminal-content"><span style="color:#64748b">C:\Users\You&gt;</span> jasd compile data.jasd
-<span style="color:var(--accent-green)">✓ Compiled to data.json</span>
+                <p>If you want to view, format, and compile files visually, download the <code>jasd-setup.exe</code> installer from the top navigation. It adds the <code>jasd</code> command to your system.</p>
 
-<span style="color:#64748b">C:\Users\You&gt;</span> jasd</div>
+                <h2>4. Editor Syntax Highlighting</h2>
+                <p>To make your <code>.jasd</code> files colorful in VS Code, Pulsar, Notepad++, or Vim, paste this single command into your terminal. It automatically detects your editor and installs the highlighting.</p>
+                
+                <div class="warning-box">
+                    <strong>🛡️ Is this safe?</strong> Yes. Because the command is very long, it looks like a virus. All it does is look for your editor's folder and write a tiny <code>.json</code> or <code>.xml</code> file that tells the editor what colors to use. It does <strong>not</strong> download anything from the internet or run in the background.
+                </div>
+
+                <div class="terminal-wrapper" style="max-width: 900px;">
+                    <div class="terminal-block">
+                        <div class="terminal-header"><div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div><div class="terminal-title">Terminal <button class="copy-btn" onclick="copyCode(this)">Copy</button></div></div>
+                        <div class="terminal-content" style="white-space: pre-wrap; word-break: break-all; font-size: 0.8rem;">python -c "import os,json; h=os.path.expanduser('~'); g={'name':'JASD','scopeName':'source.jasd','fileTypes':['jasd'],'patterns':[{'match':'^\\s*--.*$','name':'comment.line.jasd'},{'match':'\\[|\\]|\\{|\\}','name':'punctuation.section.block.jasd'},{'match':'\\b[A-Za-z0-9_-]+(?=\\s*:)','name':'entity.name.tag.jasd'},{'match':'\"[^\"]*\"|\'[^\']*\'','name':'string.quoted.jasd'},{'match':'\\b(true|false|yes|no)\\b','name':'constant.language.boolean.jasd'},{'match':'\\b\\d+\\b','name':'constant.numeric.jasd'}]}; v=os.path.join(h,'.vscode','extensions','jasd-language','syntaxes'); os.makedirs(v,exist_ok=True) if os.path.exists(os.path.join(h,'.vscode')) else None; json.dump({'name':'jasd','displayName':'JASD','version':'1.0.0','engines':{'vscode':'*'},'contributes':{'languages':[{'id':'jasd','extensions':['.jasd']}],'grammars':[{'language':'jasd','scopeName':'source.jasd','path':'./syntaxes/jasd.json'}]}}, open(os.path.join(h,'.vscode','extensions','jasd-language','package.json'),'w')) if os.path.exists(os.path.join(h,'.vscode')) else None; json.dump(g,open(os.path.join(v,'jasd.json'),'w')) if os.path.exists(os.path.join(h,'.vscode')) else None; p=os.path.join(h,'.pulsar','packages','language-jasd','grammars'); os.makedirs(p,exist_ok=True) if os.path.exists(os.path.join(h,'.pulsar')) else None; json.dump({'name':'language-jasd','version':'1.0.0','engines':{'pulsar':'*'}}, open(os.path.join(h,'.pulsar','packages','language-jasd','package.json'),'w')) if os.path.exists(os.path.join(h,'.pulsar')) else None; json.dump(g,open(os.path.join(p,'jasd.json'),'w')) if os.path.exists(os.path.join(h,'.pulsar')) else None; npp=os.path.join(h,'AppData','Roaming','Notepad++','userDefineLang.xml'); xml='<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<NotepadPlus>\n<LexerType name=\"jasd\" desc=\"JASD\" ext=\"\">\n<WordsStyle name=\"COMMENTS\" styleID=\"1\" fgColor=\"808080\" />\n<WordsStyle name=\"STRINGS\" styleID=\"2\" fgColor=\"00FF00\" />\n<WordsStyle name=\"NUMBERS\" styleID=\"3\" fgColor=\"FF0000\" />\n</LexerType>\n</NotepadPlus>'; open(npp,'w').write(xml) if os.path.exists(npp) else None; vimdir=os.path.join(h,'.vim','syntax'); os.makedirs(vimdir,exist_ok=True) if os.path.exists(os.path.join(h,'.vim')) else None; vimscript='syntax keyword jasdKeyword true false yes no\nsyntax match jasdComment \"--.*\"\nsyntax match jasdString \"\\\".*\\\"\"\nsyntax match jasdNumber \"\\d\\+\"\nhighlight link jasdKeyword Keyword\nhighlight link jasdComment Comment\nhighlight link jasdString String\nhighlight link jasdNumber Number'; open(os.path.join(vimdir,'jasd.vim'),'w').write(vimscript) if os.path.exists(os.path.join(h,'.vim')) else None; print('✅ Done! Restart your editor.')"</div>
                     </div>
                 </div>
             </div>
