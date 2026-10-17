@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://xlueisadev.github.io/jasd/sitemap.xml
